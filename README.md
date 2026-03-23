@@ -51,7 +51,8 @@ While the original project provides a fantastic global isochrone mapping solutio
 1. 下载或 Clone 本仓库。
 2. 上传至任何支持 PHP 的 Web 服务器（如宝塔面板）。
 3. 确保 `/data` 和 `/api/data` 文件夹拥有写入权限（`755` 或 `777`）。
-4. 如果你喜欢本项目麻烦点个小⭐哦
+4. 打开 index.html：搜索 const amapKey = "在此处填入你的高德Web服务Key";同样打开 weather.js：搜索这个const amapKey = 改成你自己的的"在此处填入你的高德Web服务Key";打开你的 后台管理文件（比如 admin.php）：把你真实的后台登录密码，改成如 admin123 这种密码。
+5. 如果你喜欢本项目麻烦点个小⭐哦
 
 ---
 
