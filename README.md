@@ -1,4 +1,4 @@
-# 🚗 Drive Escape CN - 周末自驾逃离计划 (国内增强版)
+# 🚗 Drive Escape CN - 周末自驾游逃离计划 (国内增强版)
 
 Pick a city, see how far you can drive in 5 hours. 
 
