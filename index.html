@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>周末自驾逃离计划</title>
+  <meta name="description" content="周末不想呆在城市？打开周末自驾逃离计划，一键查询从当前城市出发的自驾游路线、耗时与距离。告别人挤人，探索真正的小众自驾目的地，即刻开启你的逃离计划！" />
+  <meta name="keywords" content="周末自驾游,周边游,自驾路线规划,逃离城市,小众旅游地,自驾距离计算,地图导航" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏕️</text></svg>">
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PY6T0FLSH2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-PY6T0FLSH2');
+  </script>
+
+  <script src="lang/zh-CN.js" id="lang-script"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    /* =========================================
+       🌱 基础全局样式
+       ========================================= */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    #map { width: 100%; height: 100%; background: #eef1ec; }
+
+    /* ✨ 核心：顶级高颜值毛玻璃面板 (Glassmorphism) */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.55); 
+      backdrop-filter: blur(20px);           
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      color: #333;
+    }
+
+    /* =========================================
+       🖥️ 桌面端布局
+       ========================================= */
+    .top-left {
+      position: fixed; top: 16px; left: 16px; z-index: 1000;
+      padding: 12px 24px; text-align: left; pointer-events: none;
+    }
+    .title-en { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; margin-bottom: 2px; }
+    .title-zh { font: 900 24px/1.2 "Noto Serif SC", serif; color: #111827; margin: 0; }
+    .title-sub { font: 700 13px/1.2 "Noto Serif SC", serif; color: #10b981; letter-spacing: 0.1em; margin-top: 4px; }
+
+    .top-right {
+      position: fixed; top: 16px; right: 16px; z-index: 1001;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+
+    .control-item { padding: 8px 14px; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+    select, button, input { outline: none; font-family: inherit; }
+    
+    .lang-select { 
+      cursor: pointer; appearance: none; -webkit-appearance: none; border: none; background: transparent; color: #374151; padding-right: 20px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239ca3af'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right center;
+    }
+    
+    .theme-btn { cursor: pointer; border: none; background: transparent; padding: 8px; border-radius: 50%; width: 36px; height: 36px; transition: transform 0.2s; color: #4b5563; display: flex; align-items: center; justify-content: center; }
+    .theme-btn:hover { transform: scale(1.05); }
+
+    .search-container { position: relative; width: 240px; }
+    .search-input { width: 100%; border: none; background: transparent; padding: 2px 4px; color: #111827; font-size: 14px; }
+    .search-input::placeholder { color: #6b7280; font-weight: normal; }
+    
+    #search-results {
+      position: absolute; top: calc(100% + 8px); left: 0; width: 100%;
+      max-height: 280px; overflow-y: auto; display: none; padding: 6px 0; z-index: 1005;
+    }
+    #search-results::-webkit-scrollbar { width: 4px; }
+    #search-results::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+    .result-item { padding: 10px 16px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(0,0,0,0.03); }
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: rgba(16, 185, 129, 0.08); }
+    .result-name { font-size: 13px; color: #1f2937; font-weight: 600; }
+    .result-sub { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+    .time-container { gap: 10px; color: #10b981; }
+    .time-slider { width: 100px; accent-color: #10b981; cursor: pointer; }
+
+    .leaflet-control-zoom { display: none !important; }
+    .legend {
+      position: fixed; left: 16px; bottom: 24px; z-index: 1000;
+      width: 140px; padding: 12px; font-size: 11px; max-height: 60vh; overflow-y: auto;
+    }
+    .legend h3 { font-size: 12px; margin-bottom: 8px; color: #4b5563; font-weight: bold; }
+    .legend .item, .legend .band { display: flex; align-items: center; gap: 8px; margin: 4px 0; color: #4b5563;}
+    .legend .swatch { width: 14px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .legend .line-swatch { width: 14px; height: 0; flex-shrink: 0; }
+    .legend .line-swatch.city { border-top: 2px solid #8b5cf6; }
+    .legend .line-swatch.prov { border-top: 2px dashed #9ca3af; }
+    .legend .line-swatch.origin { border-top: 3px solid #f43f5e; }
+    .legend .hatch { width: 14px; height: 10px; border-radius: 2px; flex-shrink: 0; background: repeating-linear-gradient(45deg, #f43f5e, #f43f5e 3px, rgba(255,255,255,0.8) 3px, rgba(255,255,255,0.8) 6px); }
+
+    .info-panel {
+      position: fixed; right: 16px; bottom: 24px; z-index: 1000;
+      padding: 14px 18px; display: none; max-width: 240px; line-height: 1.6;
+    }
+    .info-panel h4 { font-size: 16px; margin-bottom: 4px; color: #111827; }
+    .info-panel .time { color: #10b981; font-weight: 700; font-size: 14px; }
+    .info-panel .detail-text { font-size: 12px; color: #6b7280; }
+
+    .loading-overlay { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 2000; display: none; pointer-events: none; }
+    .loading-overlay.active { display: flex; }
+    .loading-box { padding: 10px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; border-radius: 30px; font-weight: 600;}
+    .spinner { width: 16px; height: 16px; border: 2px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .county-label { font-weight: 600; line-height: 1.2; color: #1f2937; text-align: center; white-space: pre; text-shadow: -1px -1px 0 rgba(255,255,255,0.95), 1px -1px 0 rgba(255,255,255,0.95), -1px 1px 0 rgba(255,255,255,0.95), 1px 1px 0 rgba(255,255,255,0.95), 0 2px 6px rgba(0,0,0,0.15); pointer-events: none; transform: translate(-50%, -50%); }
+    .county-label.gray { color: #9ca3af; font-weight: 500; text-shadow: -1px -1px 0 rgba(255,255,255,0.8), 1px -1px 0 rgba(255,255,255,0.8), -1px 1px 0 rgba(255,255,255,0.8), 1px 1px 0 rgba(255,255,255,0.8); }
+
+    /* =========================================
+       📱 移动端专属布局 (底部悬浮操作台) 
+       ========================================= */
+    @media (max-width: 640px) {
+      .top-left { top: 12px; left: 12px; padding: 8px 16px; width: auto; max-width: 65%; }
+      .title-en { font-size: 8px; }
+      .title-zh { font-size: 16px; }
+      .title-sub { font-size: 11px; margin-top: 2px; }
+
+      .top-right { top: 12px; right: 12px; gap: 8px; }
+      .control-item { padding: 6px 10px; font-size: 12px; border-radius: 12px; }
+      .lang-select { padding-right: 16px; }
+      .theme-btn { width: 32px; height: 32px; padding: 6px; }
+
+      .mobile-action-bar {
+        position: fixed; bottom: 20px; left: 5%; width: 90%;
+        z-index: 1002; display: flex; flex-direction: column; gap: 10px;
+        padding: 14px 16px; border-radius: 20px;
+      }
+      
+      .search-container { width: 100%; }
+      .search-input { font-size: 14px; padding: 6px 4px; }
+      .time-container { width: 100%; justify-content: space-between; padding: 4px 0 0 0; }
+      .time-slider { width: 70%; }
+
+      /* 🌟 移动端搜索结果向上弹出 */
+      #search-results { top: auto; bottom: calc(100% + 12px); max-height: 220px; border-radius: 16px; }
+
+      .legend { left: 12px; bottom: 130px; width: 100px; padding: 8px; font-size: 9px; max-height: 200px; }
+      .legend h3 { font-size: 10px; margin-bottom: 6px; }
+      .info-panel { right: 12px; bottom: 130px; max-width: 160px; padding: 10px 14px; }
+      .info-panel h4 { font-size: 14px; }
+      .info-panel .time { font-size: 12px; }
+      .loading-overlay { bottom: 140px; }
+    }
+
+    @media (min-width: 641px) {
+      .mobile-action-bar { display: contents; } 
+    }
+
+    /* =========================================
+       🌙 沉浸暗色模式 (柔和护眼版毛玻璃)
+       ========================================= */
+    body.dark-mode #map { background: #18181b; } 
+    body.dark-mode .leaflet-tile { filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(90%); }
+    
+    body.dark-mode .glass-panel {
+      background: rgba(30, 30, 30, 0.55); 
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      color: #e5e7eb;
+    }
+    
+    body.dark-mode .title-zh, body.dark-mode .info-panel h4 { color: #f3f4f6; }
+    body.dark-mode .title-en, body.dark-mode .legend h3, body.dark-mode .legend .item { color: #9ca3af; }
+    body.dark-mode .title-sub, body.dark-mode .info-panel .time, body.dark-mode .time-container { color: #34d399; }
+    body.dark-mode .time-slider { accent-color: #34d399; }
+    body.dark-mode .search-input, body.dark-mode .lang-select, body.dark-mode .theme-btn { color: #e5e7eb; }
+    body.dark-mode .search-input::placeholder { color: #6b7280; }
+    
+    body.dark-mode #search-results .result-item { border-color: rgba(255,255,255,0.05); }
+    body.dark-mode #search-results .result-item:hover { background: rgba(255,255,255,0.05); }
+    body.dark-mode .result-name { color: #e5e7eb; }
+    body.dark-mode .result-sub { color: #9ca3af; }
+    
+    body.dark-mode .lang-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239ca3af'/%3E%3C/svg%3E"); }
+    
+    body.dark-mode .county-label { color: #f3f4f6; text-shadow: -1px -1px 0 rgba(0,0,0,0.8), 1px -1px 0 rgba(0,0,0,0.8), -1px 1px 0 rgba(0,0,0,0.8), 1px 1px 0 rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.5); }
+    body.dark-mode .county-label.gray { color: #9ca3af; text-shadow: -1px -1px 0 rgba(0,0,0,0.6), 1px -1px 0 rgba(0,0,0,0.6), -1px 1px 0 rgba(0,0,0,0.6), 1px 1px 0 rgba(0,0,0,0.6); }
+    
+    body.dark-mode .legend .swatch { border-color: rgba(255,255,255,0.1); }
+    body.dark-mode .legend .hatch { border-color: rgba(255,255,255,0.1); background: repeating-linear-gradient(45deg, #be123c, #be123c 3px, rgba(0,0,0,0.5) 3px, rgba(0,0,0,0.5) 6px); }
+  </style>
+</head>
+<body>
+  <div style="display:none;" aria-hidden="true">
+    <h2>关于周末自驾逃离计划 - 探索城市周边的远方</h2>
+    <p>无论你身在杭州、北京、上海还是广州，当你厌倦了城市的喧嚣，想要在周末来一场说走就走的自驾游时，“周末自驾逃离计划”为你提供最直观的路线灵感。</p>
+    <p>我们提供基于高德地图和 OSRM 的精准自驾耗时预估，包含 1小时、2小时、3小时乃至更远的周边游目的地推荐。不看繁琐的攻略，只看地图色阶，一目了然。</p>
+    <p>核心功能：全国城市切换、自驾耗时等高线展示、昼夜模式切换、多语言支持、用户反馈系统。</p>
+    <p>立刻开启你的周末逃离计划，探索那些藏在地图色块里的绝美目的地。</p>
+  </div>
+
+  <div id="map"></div>
+
+<div class="top-left glass-panel">
+  <div class="title-en">Weekend Escape Plan</div>
+  <h1 class="title-zh">周末自驾逃离计划</h1>
+  <div class="title-sub" id="title-sub">自动定位中... · 耗时&距离</div>
+</div>
+
+<div class="top-right">
+  <div class="mobile-action-bar glass-panel">
+    <div class="search-container control-item">
+      <input type="text" id="city-search" class="search-input" placeholder="输入出发城市，开始逃离..." autocomplete="off" />
+      <div id="search-results" class="glass-panel"></div>
+    </div>
+    <div class="time-container control-item">
+      <span id="time-slider-label" style="min-width:32px; text-align:right;">5.0h</span>
+      <input type="range" id="time-slider" class="time-slider" min="1" max="10" step="0.5" value="5">
+    </div>
+  </div>
+
+  <div class="control-item glass-panel">
+    <select id="lang-select" class="lang-select">
+      <option value="zh-CN">简体中文</option>
+      <option value="zh-TW">繁體中文</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+    </select>
+  </div>
+  
+  <button class="theme-btn glass-panel" id="theme-toggle" title="切换昼夜模式">
+    <svg id="theme-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    </svg>
+  </button>
+</div>
+
+<div class="loading-overlay active" id="loading">
+  <div class="loading-box glass-panel">
+    <div class="spinner"></div>
+    <div id="loading-text">正在规划路线...</div>
+  </div>
+</div>
+
+<aside class="legend glass-panel">
+  <h3>路线图例</h3>
+  <div class="item"><span class="hatch"></span><span>出发中心</span></div>
+  <div class="item"><span class="line-swatch origin"></span><span id="legend-origin">出发市界</span></div>
+  <div class="item"><span class="line-swatch prov"></span><span>省域边界</span></div>
+  <div class="item"><span class="line-swatch city"></span><span>市域边界</span></div>
+  <div id="band-list"></div>
+</aside>
+
+<div class="info-panel glass-panel" id="info">
+  <h4 id="info-name"></h4>
+  <div id="info-weather" style="font-size: 13px; font-weight: 600; margin: 4px 0; display: none;"></div>
+  <div id="info-detail" class="detail-text"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// 👇 唯一的高德神级 Key
+const amapKey = "在此处填入你的高德Web服务Key"; 
+/* =========================================
+   🌍 多语言与本地化配置
+   ========================================= */
+const LANG_FILES = { 'zh-CN': 'lang/zh-CN.js', 'zh-TW': 'lang/zh-TW.js', 'en': 'lang/en.js', 'ja': 'lang/ja.js' };
+
+function t(key, vars) {
+  let s = window.LANG?.[key] || key;
+  if (vars) Object.entries(vars).forEach(([k, v]) => { s = s.replace(`{${k}}`, v); });
+  return s;
+}
+
+function applyLang() {
+  document.documentElement.lang = window.LANG?.code || 'zh-CN';
+  document.querySelector('.title-en').textContent = t('titleEn');
+  document.querySelector('.title-zh').textContent = t('title');
+  document.getElementById('city-search').placeholder = t('searchPlaceholder');
+  document.querySelector('.legend h3').textContent = t('legend');
+  
+  const legendItems = document.querySelectorAll('.legend > .item');
+  if (legendItems[0]) legendItems[0].querySelector('span:last-child').textContent = t('origin');
+  if (legendItems[1]) legendItems[1].querySelector('span:last-child').textContent = t('originCity', { city: typeof currentCityName !== 'undefined' ? currentCityName : '' });
+  if (legendItems[2]) legendItems[2].querySelector('span:last-child').textContent = t('provinceBorder');
+  if (legendItems[3]) legendItems[3].querySelector('span:last-child').textContent = t('cityBorder');
+  
+  if (typeof currentCityName !== 'undefined') {
+    document.getElementById('title-sub').textContent = t('subtitle', { city: currentCityName });
+    document.title = t('pageTitle', { city: currentCityName });
+    document.getElementById('legend-origin').textContent = t('originCity', { city: currentCityName });
+  }
+}
+
+function loadLang(code) {
+  return new Promise((resolve, reject) => {
+    const old = document.getElementById('lang-script');
+    const s = document.createElement('script'); 
+    s.id = 'lang-script'; s.src = LANG_FILES[code] || LANG_FILES['zh-CN'];
+    s.onload = () => resolve(); s.onerror = reject; old.parentNode.replaceChild(s, old);
+  });
+}
+
+(function() {
+  const saved = localStorage.getItem('lang') || 'zh-CN'; 
+  const sel = document.getElementById('lang-select'); sel.value = saved;
+  if (saved !== 'zh-CN') loadLang(saved).then(applyLang);
+  sel.addEventListener('change', () => { 
+    const code = sel.value; localStorage.setItem('lang', code); loadLang(code).then(applyLang); 
+  });
+})();
+
+/* =========================================
+   🎨 动态时间与色阶配置
+   ========================================= */
+let MAX_DRIVE_HOURS = 5.0; 
+
+const colorBands = [
+  { min: 0.0, max: 0.5, color: "#059669", label: "0–0.5h" },
+  { min: 0.5, max: 1.0, color: "#10b981", label: "0.5–1h" },
+  { min: 1.0, max: 1.5, color: "#34d399", label: "1–1.5h" },
+  { min: 1.5, max: 2.0, color: "#6ee7b7", label: "1.5–2h" },
+  { min: 2.0, max: 2.5, color: "#a7f3d0", label: "2–2.5h" },
+  { min: 2.5, max: 3.0, color: "#fde047", label: "2.5–3h" },
+  { min: 3.0, max: 3.5, color: "#fbbf24", label: "3–3.5h" },
+  { min: 3.5, max: 4.0, color: "#f59e0b", label: "3.5–4h" },
+  { min: 4.0, max: 4.5, color: "#ea580c", label: "4–4.5h" },
+  { min: 4.5, max: 5.0, color: "#ef4444", label: "4.5–5h" },
+  { min: 5.0, max: 6.0, color: "#dc2626", label: "5–6h" },
+  { min: 6.0, max: 7.0, color: "#b91c1c", label: "6–7h" },
+  { min: 7.0, max: 8.0, color: "#991b1b", label: "7–8h" },
+  { min: 8.0, max: 10.0, color: "#7f1d1d", label: "8–10h" }
+];
+
+function renderLegend() {
+  const bandList = document.getElementById("band-list"); 
+  bandList.innerHTML = '';
+  colorBands.forEach(b => {
+    if (b.min >= MAX_DRIVE_HOURS) return;
+    const row = document.createElement("div"); row.className = "band";
+    row.innerHTML = `<span class="swatch" style="background:${b.color}"></span><span>${b.label}</span>`;
+    bandList.appendChild(row);
+  });
+}
+renderLegend();
+
+const timeSlider = document.getElementById('time-slider');
+const timeSliderLabel = document.getElementById('time-slider-label');
+
+timeSlider.addEventListener('input', (e) => { 
+  MAX_DRIVE_HOURS = parseFloat(e.target.value); 
+  timeSliderLabel.textContent = MAX_DRIVE_HOURS.toFixed(1) + 'h'; 
+});
+
+timeSlider.addEventListener('change', () => { 
+  renderLegend(); renderMap(true); 
+});
+
+/* =========================================
+   📍 省级基础坐标与行政区划数据
+   ========================================= */
+const CITY_CENTERS = { 
+  '重庆': [106.55, 29.56], '北京': [116.40, 39.91], '天津': [117.20, 39.13], '上海': [121.47, 31.23], 
+  '呼伦贝尔': [119.77, 49.21], '酒泉': [98.49, 39.73], '哈密': [93.51, 42.83], '巴音郭楞': [86.15, 41.77], 
+  '阿里': [80.11, 32.50], '那曲': [92.05, 31.48] 
+};
+
+const PROVINCES = [ 
+  { code: 110000, name: "北京", center: [116.41, 39.90] }, { code: 120000, name: "天津", center: [117.19, 39.13] }, 
+  { code: 130000, name: "河北", center: [114.50, 38.04] }, { code: 140000, name: "山西", center: [112.55, 37.87] }, 
+  { code: 150000, name: "内蒙古", center: [111.75, 40.84] }, { code: 210000, name: "辽宁", center: [123.43, 41.80] }, 
+  { code: 220000, name: "吉林", center: [125.33, 43.90] }, { code: 230000, name: "黑龙江", center: [126.66, 45.74] }, 
+  { code: 310000, name: "上海", center: [121.47, 31.23] }, { code: 320000, name: "江苏", center: [118.76, 32.06] }, 
+  { code: 330000, name: "浙江", center: [120.15, 30.26] }, { code: 340000, name: "安徽", center: [117.28, 31.86] }, 
+  { code: 350000, name: "福建", center: [119.30, 26.08] }, { code: 360000, name: "江西", center: [115.89, 28.68] }, 
+  { code: 370000, name: "山东", center: [117.00, 36.67] }, { code: 410000, name: "河南", center: [113.65, 34.76] }, 
+  { code: 420000, name: "湖北", center: [114.34, 30.55] }, { code: 430000, name: "湖南", center: [112.98, 28.19] }, 
+  { code: 440000, name: "广东", center: [113.27, 23.13] }, { code: 450000, name: "广西", center: [108.33, 22.84] }, 
+  { code: 460000, name: "海南", center: [110.35, 20.02] }, { code: 500000, name: "重庆", center: [106.50, 29.53] }, 
+  { code: 510000, name: "四川", center: [104.07, 30.67] }, { code: 520000, name: "贵州", center: [106.71, 26.57] }, 
+  { code: 530000, name: "云南", center: [102.71, 25.05] }, { code: 540000, name: "西藏", center: [91.13, 29.65] }, 
+  { code: 610000, name: "陕西", center: [108.95, 34.27] }, { code: 620000, name: "甘肃", center: [103.83, 36.06] }, 
+  { code: 630000, name: "青海", center: [101.78, 36.62] }, { code: 640000, name: "宁夏", center: [106.27, 38.47] }, 
+  { code: 650000, name: "新疆", center: [87.63, 43.79] }, { code: 710000, name: "台湾", center: [121.51, 25.05] }, 
+  { code: 810000, name: "香港", center: [114.17, 22.32] }, { code: 820000, name: "澳门", center: [113.55, 22.20] } 
+];
+
+/* =========================================
+   🗺️ 初始化地图与图层管理 (高德极速底图)
+   ========================================= */
+const map = L.map("map", { center: [30.26, 120.15], zoom: 8, zoomControl: false, attributionControl: false });
+
+L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}", {
+  subdomains: ["1", "2", "3", "4"], maxZoom: 18, opacity: 0.6
+}).addTo(map);
+
+let currentOrigin = [120.15, 30.26]; 
+let currentCityName = "杭州"; 
+let originAdcode = null;
+let driveDataMap = {}; 
+let allCountyFeatures = []; 
+let allGrayFeatures = []; 
+let allCityOutlines = []; 
+let allGrayCityOutlines = [];
+let labelLayer = L.layerGroup().addTo(map); 
+let activeLayers = [];
+
+/* =========================================
+   🧮 核心算法引擎 (距离与耗时预估)
+   ========================================= */
+function haversine(lng1, lat1, lng2, lat2) { 
+  const R = 6371; 
+  const dLat = (lat2 - lat1) * Math.PI / 180; 
+  const dLng = (lng2 - lng1) * Math.PI / 180; 
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2; 
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+}
+
+function estimateDriveTime(lng, lat) { 
+  const dist = haversine(currentOrigin[0], currentOrigin[1], lng, lat); 
+  const roadDist = Math.round(dist * 1.35); 
+  return { time: Math.round(roadDist / 85 * 10) / 10, dist: roadDist }; 
+}
+
+function getDriveData(feature) { 
+  const code = String(feature?.properties?.adcode || ""); 
+  if (driveDataMap[code]) return driveDataMap[code]; 
+  const center = feature?.properties?.centroid || feature?.properties?.center; 
+  if (!center || center.length !== 2) return null; 
+  const est = estimateDriveTime(center[0], center[1]); 
+  return { name: feature?.properties?.name || "", time: est.time, dist: est.dist, estimated: true }; 
+}
+
+function getBandColor(time) { 
+  if (typeof time !== "number") return "#e5e7eb"; 
+  for (const b of colorBands) { if (time >= b.min && time < b.max) return b.color; } 
+  return colorBands[colorBands.length - 1].color; 
+}
+
+function fmtTime(t) { return typeof t !== "number" ? "--" : Number.isInteger(t) ? `${t}` : `${t.toFixed(1)}`; }
+
+function styleCounty(feature) { 
+  const d = getDriveData(feature); 
+  return { color: "#ffffff", weight: 1.5, opacity: 0.9, fillOpacity: 0.7, fillColor: d ? getBandColor(d.time) : "#e5e7eb" }; 
+}
+
+/* =========================================
+   💡 交互反馈系统 (加载与悬浮信息)
+   ========================================= */
+const loadingEl = document.getElementById("loading"); 
+const loadingText = document.getElementById("loading-text");
+
+function showLoading(msg) { loadingText.textContent = msg; loadingEl.classList.add("active"); }
+function hideLoading() { loadingEl.classList.remove("active"); }
+
+const infoPanel = document.getElementById("info"); 
+const infoName = document.getElementById("info-name"); 
+const infoDetail = document.getElementById("info-detail");
+
+function showInfo(dd) {
+  if (!dd) { infoPanel.style.display = "none"; return; }
+  document.getElementById('info-weather').style.display = 'none'; // 每次点新区域先隐藏天气，等接口拉取
+  const isOrigin = dd.isOrigin || dd.time === 0;
+  infoName.textContent = isOrigin ? `🎯 ${dd.name}（${t('origin')}）` : dd.name;
+  infoDetail.innerHTML = isOrigin 
+    ? `<span class="time">${t('originLabel')}</span>` 
+    : `<span class="time">🕐 ${fmtTime(dd.time)} ${t('timeUnit')}</span> · ${dd.dist} km${dd.estimated ? ' (预估)' : ''}`;
+  infoPanel.style.display = "block";
+}
+
+/* =========================================
+   🏷️ 地图上的文字标签渲染
+   ========================================= */
+function updateLabels() {
+  labelLayer.clearLayers(); 
+  const zoom = map.getZoom(); const bounds = map.getBounds(); const placed = []; const maxStraightKm = MAX_DRIVE_HOURS * 85; 
+  
+  const allFeatures = [ 
+    ...allCountyFeatures.filter(f => { 
+      const d = getDriveData(f); if(!d) return false; 
+      if(String(f?.properties?.adcode) === originAdcode) return true; 
+      if(d.time > MAX_DRIVE_HOURS) return false; 
+      const c = f?.properties?.centroid || f?.properties?.center; 
+      if(c && haversine(currentOrigin[0], currentOrigin[1], c[0], c[1]) > maxStraightKm) return false; 
+      return true; 
+    }).map(f => ({ f, core: true })), 
+    ...allGrayFeatures.map(f => ({ f, core: false })) 
+  ];
+  
+  allFeatures.sort((a, b) => { 
+    const da = getDriveData(a.f); const db = getDriveData(b.f); 
+    if (String(a.f?.properties?.adcode) === originAdcode) return -1; 
+    if (String(b.f?.properties?.adcode) === originAdcode) return 1; 
+    if (a.core && !b.core) return -1; if (!a.core && b.core) return 1; 
+    return (da?.time || 99) - (db?.time || 99); 
+  });
+  
+  const cfg = zoom >= 11 ? { fs: 12, fsGray: 10, minD: 14, detail: 2 } 
+            : zoom >= 10 ? { fs: 11, fsGray: 9, minD: 18, detail: 2 } 
+            : zoom >= 9 ? { fs: 10, fsGray: 8, minD: 20, detail: 2 } 
+            : zoom >= 8 ? { fs: 9, fsGray: 7, minD: 16, detail: 1 } 
+            : zoom >= 7 ? { fs: 8, fsGray: 6, minD: 12, detail: 1 } 
+            : { fs: 7, fsGray: 6, minD: 10, detail: 0 };
+            
+  for (const { f, core } of allFeatures) {
+    const driveInfo = getDriveData(f); const name = driveInfo?.name || f?.properties?.name || ""; if (!name) continue;
+    const center = f?.properties?.centroid || f?.properties?.center; if (!center || center.length !== 2) continue;
+    const ll = L.latLng(center[1], center[0]); if (!bounds.contains(ll)) continue;
+    const pt = map.latLngToContainerPoint(ll); 
+    if (placed.some(p => Math.abs(p.x - pt.x) < cfg.minD && Math.abs(p.y - pt.y) < cfg.minD)) continue; 
+    
+    placed.push(pt);
+    let text, fs, cls;
+    if (core && driveInfo) { 
+      fs = cfg.fs; cls = "county-label"; 
+      if (cfg.detail >= 2) text = `${name}\n${fmtTime(driveInfo.time)}h / ${driveInfo.dist}km`; 
+      else if (cfg.detail >= 1) text = `${name}\n${fmtTime(driveInfo.time)}h`; 
+      else text = name; 
+    } else { 
+      fs = cfg.fsGray; cls = "county-label gray"; text = name; 
+    }
+    
+    L.marker(ll, { interactive: false, icon: L.divIcon({ className: cls, html: `<span style="font-size:${fs}px">${text}</span>`, iconSize: [1,1] }) }).addTo(labelLayer);
+  }
+}
+
+/* =========================================
+   🔍 城市搜索功能 (纯净高德版)
+   ========================================= */
+const searchInput = document.getElementById("city-search"); 
+const searchResults = document.getElementById("search-results"); 
+let searchTimer = null;
+
+searchInput.addEventListener("input", () => { 
+  clearTimeout(searchTimer); const q = searchInput.value.trim(); 
+  if (!q) { searchResults.style.display = "none"; return; } 
+  searchTimer = setTimeout(() => searchCity(q), 400); 
+});
+
+async function searchCity(query) {
+  try {
+    const url = `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(query)}&key=${amapKey}`;
+    
+    const res = await fetch(url); const data = await res.json();
+    
+    if (data.status !== "1" || !data.geocodes || data.geocodes.length === 0) { 
+      searchResults.innerHTML = `<div class="result-item" style="color:#9ca3af; text-align:center;">未找到相关地点</div>`; 
+      searchResults.style.display = "block"; return; 
+    }
+    
+    searchResults.innerHTML = data.geocodes.map((item) => { 
+      const coords = item.location.split(','); 
+      let cityName = item.city; if (!cityName || Array.isArray(cityName) || cityName.length === 0) cityName = item.province;
+      
+      return `
+        <div class="result-item" data-lng="${coords[0]}" data-lat="${coords[1]}" data-name="${cityName}">
+          <div class="result-name">${item.formatted_address}</div>
+          <div class="result-sub">${item.province} · ${item.district}</div>
+        </div>
+      `; 
+    }).join("");
+    
+    searchResults.style.display = "block";
+    
+    searchResults.querySelectorAll(".result-item").forEach(el => { 
+      el.addEventListener("click", () => { 
+        searchInput.value = el.dataset.name; searchResults.style.display = "none"; 
+        showLoading("正在寻找周边远方..."); 
+        switchCity(el.dataset.name, parseFloat(el.dataset.lng), parseFloat(el.dataset.lat), 'cn'); 
+      }); 
+    });
+  } catch(e) { 
+    searchResults.innerHTML = `<div class="result-item" style="color:#ef4444;">搜索失败，请检查网络连接</div>`; 
+    searchResults.style.display = "block"; 
+  }
+}
+
+document.addEventListener("click", e => { 
+  if (!e.target.closest(".search-container")) searchResults.style.display = "none"; 
+});
+
+/* =========================================
+   📥 数据加载与解析 (对接 PHP 代理)
+   ========================================= */
+function geoURL(code) { return `/api/geo.php?code=${code}`; }
+
+async function fetchJSON(url) { 
+  const res = await fetch(url); if (!res.ok) throw new Error(); return res.json(); 
+}
+
+async function parallelLimit(tasks, limit = 5) { 
+  const results = []; let i = 0; 
+  async function worker() { while (i < tasks.length) { const idx = i++; results[idx] = await tasks[idx](); } } 
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, () => worker())); return results; 
+}
+
+const DIRECT_MUNICIPALITIES = new Set([110000, 120000, 310000, 500000]);
+
+async function loadProvinceCounties(provAdcode) {
+  try {
+    const json = await fetchJSON(geoURL(provAdcode)); const features = json.features || []; 
+    const provOutline = features.find(f => Number(f?.properties?.adcode) === provAdcode) || null; 
+    const cities = features.filter(f => Number(f?.properties?.adcode || 0) !== provAdcode);
+    
+    if (DIRECT_MUNICIPALITIES.has(provAdcode)) { 
+      return { provAdcode, provOutline, cityResults: [{ adcode: provAdcode, counties: cities, outline: provOutline }] }; 
+    }
+    
+    const cityTasks = cities.map(city => async () => { 
+      const cityCode = Number(city?.properties?.adcode); 
+      try { 
+        const cj = await fetchJSON(geoURL(cityCode)); 
+        return { adcode: cityCode, counties: (cj.features || []).filter(f => Number(f?.properties?.parent?.adcode || 0) === cityCode), outline: city }; 
+      } catch(e) { return { adcode: cityCode, counties: [], outline: city }; } 
+    });
+    
+    const cityResults = await parallelLimit(cityTasks, 5); return { provAdcode, provOutline, cityResults };
+  } catch(e) { return { provAdcode, provOutline: null, cityResults: [] }; }
+}
+
+/* =========================================
+   🎨 核心：在地图上绘制 GeoJSON
+   ========================================= */
+function renderMap(skipFitBounds = false) {
+  const savedProvOutlines = activeLayers._provOutlines; 
+  map.eachLayer(layer => { if (layer !== labelLayer && !layer._url) map.removeLayer(layer); }); 
+  activeLayers = []; activeLayers._provOutlines = savedProvOutlines; labelLayer.clearLayers();
+  
+  originAdcode = null; let minDist = Infinity;
+  for (const f of allCountyFeatures) { 
+    const c = f?.properties?.centroid || f?.properties?.center; 
+    if (c) { const d = haversine(currentOrigin[0], currentOrigin[1], c[0], c[1]); if (d < minDist) { minDist = d; originAdcode = String(f?.properties?.adcode || ""); } } 
+  }
+  
+  if (originAdcode && driveDataMap[originAdcode]) { 
+    driveDataMap[originAdcode].isOrigin = true; driveDataMap[originAdcode].time = 0; driveDataMap[originAdcode].dist = 0; 
+  }
+
+  if (allGrayFeatures.length) { 
+    const grayLayer = L.geoJSON({ type: "FeatureCollection", features: allGrayFeatures }, { style: { color: "#d1d5db", weight: 0.8, opacity: 0.6, fillColor: "#e5e7eb", fillOpacity: 0.3 } }).addTo(map); activeLayers.push(grayLayer); 
+  }
+  
+  if (allGrayCityOutlines.length) { 
+    const grayBorderLayer = L.geoJSON({ type: "FeatureCollection", features: allGrayCityOutlines.filter(Boolean) }, { style: { color: "rgba(255,255,255,0.7)", weight: 1.5, opacity: 0.8, fill: false }, interactive: false }).addTo(map); activeLayers.push(grayBorderLayer); 
+  }
+
+  const maxStraightKm = MAX_DRIVE_HOURS * 85; 
+  const visibleFeatures = allCountyFeatures.filter(f => { 
+    const d = getDriveData(f); if (!d) return false; if (String(f?.properties?.adcode) === originAdcode) return true; 
+    if (d.time > MAX_DRIVE_HOURS) return false; 
+    const center = f?.properties?.centroid || f?.properties?.center; 
+    if (center && haversine(currentOrigin[0], currentOrigin[1], center[0], center[1]) > maxStraightKm) return false; 
+    return true; 
+  });
+
+  const countyLayer = L.geoJSON({ type: "FeatureCollection", features: visibleFeatures }, {
+    style: styleCounty,
+    onEachFeature(feature, layer) {
+      const code = String(feature?.properties?.adcode || ""); const isOriginCounty = (code === originAdcode);
+      layer.on("mouseover", () => { 
+        countyLayer.resetStyle(); layer.setStyle({ weight: 3, color: "#111827", fillOpacity: 0.95 }); layer.bringToFront(); 
+        activeLayers.forEach(l => { if (l._isCityBorder || l._isProvBorder) l.bringToFront(); }); 
+        showInfo(getDriveData(feature)); 
+        countyLayer.eachLayer(l => { if (String(l.feature?.properties?.adcode) === originAdcode && l._path && String(l.feature?.properties?.adcode) !== code) { l._path.setAttribute("fill", "url(#originHatch)"); l._path.setAttribute("fill-opacity", "1"); } }); 
+      });
+      layer.on("mouseout", () => { 
+        countyLayer.resetStyle(layer); infoPanel.style.display = "none"; 
+        if (isOriginCounty && layer._path) { layer._path.setAttribute("fill", "url(#originHatch)"); layer._path.setAttribute("fill-opacity", "1"); } 
+      });
+      layer.on("click", e => {         
+        L.DomEvent.stopPropagation(e);         
+        showInfo(getDriveData(feature));         
+        const code = String(feature?.properties?.adcode || "");
+        // 🌟🌟 呼叫你专属的 weather.js 里的函数！
+        if (code && typeof fetchWeather === 'function') {          
+          fetchWeather(code);        
+        }       
+      });
+      if (isOriginCounty) { layer.on("add", () => { if (layer._path) { layer._path.style.fill = "url(#originHatch)"; layer._path.style.fillOpacity = "1"; } }); }
+    }
+  }).addTo(map); activeLayers.push(countyLayer);
+
+  map.on("click", () => { infoPanel.style.display = "none"; countyLayer.resetStyle(); });
+
+  const cityBorderLayer = L.geoJSON({ type: "FeatureCollection", features: allCityOutlines.filter(Boolean) }, { 
+    style(f) { 
+      const originCityCode = originAdcode ? Number(originAdcode.slice(0,4) + "00") : 0; 
+      const isOrigin = Number(f?.properties?.adcode) === originCityCode; 
+      return { color: isOrigin ? "#f43f5e" : "rgba(255,255,255,0.6)", weight: isOrigin ? 2.5 : 1.5, opacity: isOrigin ? 0.9 : 0.7, fill: false }; 
+    }, interactive: false 
+  }).addTo(map); cityBorderLayer._isCityBorder = true; activeLayers.push(cityBorderLayer);
+  
+  const provinceOutlines = activeLayers._provOutlines || []; 
+  if (provinceOutlines.length) { 
+    const provBorderLayer = L.geoJSON({ type: "FeatureCollection", features: provinceOutlines }, { style: { color: "#9ca3af", weight: 2, dashArray: "6 6", fill: false, opacity: 0.8 }, interactive: false }).addTo(map); 
+    provBorderLayer._isProvBorder = true; activeLayers.push(provBorderLayer); 
+  }
+
+  setTimeout(() => { 
+    const svg = map.getPanes().overlayPane.querySelector("svg"); 
+    if (svg) { 
+      let defs = svg.querySelector("defs") || svg.insertBefore(document.createElementNS("http://www.w3.org/2000/svg", "defs"), svg.firstChild); 
+      if (!svg.querySelector("#originHatch")) { 
+        const pat = document.createElementNS("http://www.w3.org/2000/svg", "pattern"); 
+        pat.setAttribute("id", "originHatch"); pat.setAttribute("patternUnits", "userSpaceOnUse"); pat.setAttribute("width", "8"); pat.setAttribute("height", "8"); pat.setAttribute("patternTransform", "rotate(45)"); 
+        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect"); bg.setAttribute("width", "8"); bg.setAttribute("height", "8"); bg.setAttribute("fill", "rgba(255,255,255,0.4)"); 
+        const ln = document.createElementNS("http://www.w3.org/2000/svg", "rect"); ln.setAttribute("x", "0"); ln.setAttribute("y", "0"); ln.setAttribute("width", "4"); ln.setAttribute("height", "8"); ln.setAttribute("fill", "#f43f5e"); 
+        pat.appendChild(bg); pat.appendChild(ln); defs.appendChild(pat); 
+      } 
+    } 
+  }, 200);
+
+  if (!skipFitBounds && visibleFeatures.length) { 
+    const fitBounds = L.latLngBounds(); 
+    visibleFeatures.forEach(f => { const c = f?.properties?.centroid || f?.properties?.center; if (c) fitBounds.extend(L.latLng(c[1], c[0])); }); 
+    if (fitBounds.isValid()) map.fitBounds(fitBounds, { padding: [40, 40] }); 
+  }
+  updateLabels(); map.off("zoomend moveend", updateLabels); map.on("zoomend moveend", updateLabels);
+}
+
+/* =========================================
+   🚀 城市切换引擎与 OSRM 静默计算
+   ========================================= */
+async function switchCity(name, lng, lat, countryCode) {
+  const corrected = CITY_CENTERS[name] || CITY_CENTERS[name.replace(/市$/, '').replace(/白族自治州$/, '').replace(/自治州$/, '')]; 
+  if (corrected) { lng = corrected[0]; lat = corrected[1]; }
+  
+  for (const layer of activeLayers) map.removeLayer(layer);
+  activeLayers = []; labelLayer.clearLayers(); map.off("click"); infoPanel.style.display = "none";
+  
+  currentOrigin = [lng, lat]; currentCityName = name;
+  document.getElementById("title-sub").textContent = t('subtitle', { city: name }); 
+  document.getElementById("legend-origin").textContent = t('originCity', { city: name }); 
+  document.title = t('pageTitle', { city: name });
+  showLoading("正在探索周边远方...");
+
+  const isChina = countryCode === 'cn' || (!countryCode && lat > 17 && lat < 55 && lng > 73 && lng < 136);
+  allCountyFeatures = []; allGrayFeatures = []; allCityOutlines = []; allGrayCityOutlines = []; driveDataMap = {}; const provinceOutlines = [];
+
+  if (isChina) {
+    const nearProvinces = []; 
+    for (const prov of PROVINCES) { if (prov.code >= 710000) continue; if (haversine(lng, lat, prov.center[0], prov.center[1]) < 1200) nearProvinces.push(prov); } 
+    
+    const nearData = await parallelLimit(nearProvinces.map(p => () => loadProvinceCounties(p.code)), 3);
+    
+    for (const prov of nearData) { 
+      if (prov.provOutline) provinceOutlines.push(prov.provOutline); 
+      for (const city of prov.cityResults) { 
+        allCityOutlines.push(city.outline); 
+        for (const county of city.counties) { 
+          allCountyFeatures.push(county); 
+          const code = String(county?.properties?.adcode || ""); const center = county?.properties?.centroid || county?.properties?.center; 
+          if (center) driveDataMap[code] = { name: county?.properties?.name || "", time: estimateDriveTime(center[0], center[1]).time, dist: estimateDriveTime(center[0], center[1]).dist, estimated: true }; 
+        } 
+      } 
+    }
+  }
+  
+  activeLayers._provOutlines = provinceOutlines;
+  
+  const cacheKey = `drive_${lng.toFixed(2)}_${lat.toFixed(2)}`; 
+  let cached = null; 
+  try { cached = JSON.parse(localStorage.getItem(cacheKey)); } catch(e) {}
+  
+  if (cached && typeof cached === 'object' && Object.keys(cached).length > 0) {
+    for (const [code, data] of Object.entries(cached)) { if (driveDataMap[code]) driveDataMap[code] = { ...driveDataMap[code], ...data, estimated: false }; }
+    renderMap(); hideLoading();
+  } else {
+    renderMap(); 
+    hideLoading();
+    
+    const destinations = []; 
+    for (const f of allCountyFeatures) { 
+      const center = f?.properties?.centroid || f?.properties?.center; 
+      if (center && center.length === 2) destinations.push({ adcode: String(f?.properties?.adcode || ""), lng: center[0], lat: center[1], name: f?.properties?.name || "" }); 
+    }
+    
+    const batchSize = 50; const osrmCache = {}; const batches = []; 
+    for (let i = 0; i < destinations.length; i += batchSize) batches.push(destinations.slice(i, i + batchSize));
+      
+    for (let bi = 0; bi < batches.length; bi++) {
+      const batch = batches[bi]; 
+      const coords = `${lng},${lat};` + batch.map(d => `${d.lng},${d.lat}`).join(";"); 
+      const destIndices = batch.map((_, j) => j + 1).join(";"); 
+      const url = `https://router.project-osrm.org/table/v1/driving/${coords}?sources=0&destinations=${destIndices}&annotations=duration,distance`;
+      
+      try { 
+        const res = await fetch(url); const data = await res.json(); 
+        if (data.code === "Ok") { 
+          batch.forEach((d, j) => { 
+            const timeSec = data.durations[0][j]; const distM = data.distances[0][j]; 
+            if (timeSec != null && timeSec > 0) { 
+              const result = { name: d.name, time: Math.round(timeSec / 360) / 10, dist: Math.round(distM / 1000) }; 
+              driveDataMap[d.adcode] = { ...driveDataMap[d.adcode], ...result, estimated: false }; osrmCache[d.adcode] = result; 
+            } 
+          }); 
+        } 
+      } catch(e) { console.log("OSRM静默计算跳过一批"); }
+      
+      renderMap(true);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    
+    try { localStorage.setItem(cacheKey, JSON.stringify(osrmCache)); } catch(e) {}
+  }
+}
+
+/* =========================================
+   ▶️ 应用初始化启动与暗色模式
+   ========================================= */
+(async function initMap() {
+  showLoading("正在获取您的出发城市...");
+  
+  try {
+    const ipRes = await fetch(`https://restapi.amap.com/v3/ip?key=${amapKey}`);
+    const ipData = await ipRes.json();
+
+    let targetCity = "杭州";
+    let targetLng = 120.15;
+    let targetLat = 30.26;
+
+    if (ipData.status === "1" && ipData.city) {
+      targetCity = (typeof ipData.city === 'string' && ipData.city.length > 0) ? ipData.city : ipData.province;
+      targetCity = targetCity.replace(/市$/, '');
+
+      if (ipData.rectangle) {
+        const rectArr = ipData.rectangle.split(';');
+        const p1 = rectArr[0].split(',');
+        const p2 = rectArr[1].split(',');
+        targetLng = (parseFloat(p1[0]) + parseFloat(p2[0])) / 2;
+        targetLat = (parseFloat(p1[1]) + parseFloat(p2[1])) / 2;
+      }
+    }
+
+    console.log(`🌍 魔法定位成功：用户当前在 [${targetCity}]`);
+    switchCity(targetCity, targetLng, targetLat, 'cn');
+
+  } catch (e) {
+    console.error("IP定位失败，降级使用默认城市", e);
+    switchCity("杭州", 120.15, 30.26, 'cn');
+  }
+})();
+
+const themeToggleBtn = document.getElementById('theme-toggle'); 
+const themeIcon = document.getElementById('theme-icon');
+const themeIcons = { 
+  light: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>', 
+  dark: '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>' 
+};
+
+function setTheme(isDark) { 
+  document.body.classList.toggle('dark-mode', isDark); 
+  themeIcon.innerHTML = isDark ? themeIcons.dark : themeIcons.light; 
+  localStorage.setItem('drive-escape-theme', isDark ? 'dark' : 'light'); 
+}
+
+const savedTheme = localStorage.getItem('drive-escape-theme'); 
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (savedTheme === 'dark' || (!savedTheme && prefersDark)) { setTheme(true); }
+
+themeToggleBtn.addEventListener('click', () => { setTheme(!document.body.classList.contains('dark-mode')); });
+</script> 
+
+<script src="weather.js?v=1.2"></script>
+<script src="feedback.js?v=1.2"></script>
+<script src="notice.js?v=1.2"></script>
+
+<script>
+// 统计代码
+fetch('/api/track.php').catch(() => {});
+</script>
+</body>
+</html>
