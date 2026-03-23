@@ -10,6 +10,7 @@ Pick a city, see how far you can drive in 5 hours.
 ## 🏆 Acknowledgements (特别致谢)
 
 This project is deeply inspired by and built upon the brilliant open-source repository [drive-escape](https://github.com/qiaoshouqing/drive-escape) created by **[@benshandebiao](https://x.com/benshandebiao)**. 
+
 本项目最核心的“等时线多边形拼接逻辑”与创意思维，完全来自于原作者的无私开源。在此向原作者致以最深的敬意与感谢！
 
 ---
@@ -17,6 +18,7 @@ This project is deeply inspired by and built upon the brilliant open-source repo
 ## 🌟 What's New in this Version? (本版本的核心升级)
 
 While the original project provides a fantastic global isochrone mapping solution, this fork focuses heavily on **localizing the experience for the Chinese market**, enhancing the UI/UX, and adding operational features for independent developers.
+
 原版提供了极佳的全球化自驾探索方案。本分支则致力于**国内本土化体验**的极致打磨，大幅强化了视觉交互与独立运营能力。
 
 **🚀 核心增强点 (Key Enhancements):**
