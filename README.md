@@ -7,7 +7,6 @@ Pick a city, see how far you can drive in 5 hours.
 
 ---
 
----
 
 ## 🌟 What's New in this Version? (本版本的核心升级)
 
