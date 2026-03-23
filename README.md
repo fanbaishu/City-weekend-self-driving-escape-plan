@@ -7,12 +7,6 @@ Pick a city, see how far you can drive in 5 hours.
 
 ---
 
-## 🏆 Acknowledgements (特别致谢)
-
-This project is deeply inspired by and built upon the brilliant open-source repository [drive-escape](https://github.com/qiaoshouqing/drive-escape) created 
-
-本项目最核心的“等时线多边形拼接逻辑”与创意思维，完全来自于原作者的无私开源。在此向原作者致以最深的敬意与感谢！
-
 ---
 
 ## 🌟 What's New in this Version? (本版本的核心升级)
@@ -43,6 +37,13 @@ While the original project provides a fantastic global isochrone mapping solutio
 2. 上传至任何支持 PHP 的 Web 服务器（如宝塔面板）。
 3. 确保 `/data` 和 `/api/data` 文件夹拥有写入权限（`755` 或 `777`）。
 4. （重要）在 `index.html` 中将 `amapKey` 替换为你自己的高德 Web 服务 Key。
+
+
+## 🏆 Acknowledgements (特别致谢)
+
+This project is deeply inspired by and built upon the brilliant open-source repository [drive-escape](https://github.com/qiaoshouqing/drive-escape) created 
+
+本项目最核心的“等时线多边形拼接逻辑”与创意思维，完全来自于原作者的无私开源。在此向原作者致以最深的敬意与感谢！
 
 ## 📄 License
 
