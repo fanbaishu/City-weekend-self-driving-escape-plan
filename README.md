@@ -1,12 +1,28 @@
 # 🚗 Drive Escape CN - 周末自驾逃离计划 (国内增强版)
 
 Pick a city, see how far you can drive in 5 hours. 
+
 一键查询城市周边 1-5 小时自驾逃离圈，告别人挤人，探索真正的小众自驾目的地。
 
 **Live Demo (体验地址)** → [https://tljh.fbswlkj.com](https://tljh.fbswlkj.com)
 
 ---
 
+## 📬 Contact & Follow Me (联系作者)
+
+If you like this project or want to discuss further, feel free to connect with me!
+
+如果你喜欢这个项目，或者想探讨更多独立开发与流量增长玩法，欢迎来找我玩：
+
+* 🆇 **Twitter (X):** [@klkwruirui](https://x.com/klkwruirui)
+* 
+* 📸 **Instagram:** [@fanba_ishu](https://instagram.com/fanba_ishu)
+* 
+* 🎵 **抖音 (Douyin):** 搜 (抖音号: fbsgfzh)
+* 
+* 💬 **微信 (WeChat):** 你的微信号 (fbs0709)
+
+---
 
 ## 🌟 What's New in this Version? (本版本的核心升级)
 
@@ -35,8 +51,8 @@ While the original project provides a fantastic global isochrone mapping solutio
 1. 下载或 Clone 本仓库。
 2. 上传至任何支持 PHP 的 Web 服务器（如宝塔面板）。
 3. 确保 `/data` 和 `/api/data` 文件夹拥有写入权限（`755` 或 `777`）。
-4. （重要）在 `index.html` 中将 `amapKey` 替换为你自己的高德 Web 服务 Key。
 
+---
 
 ## 🏆 Acknowledgements (特别致谢)
 
