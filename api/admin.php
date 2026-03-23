@@ -4,10 +4,10 @@ session_start();
 // =========================================
 // 🔒 后台安全与文件配置
 // =========================================
-$ADMIN_PASSWORD = 'admin123'; // <--- ⚠️ 记得把 admin123  换成你的后台密码
-$LOG_FILE = 'feedback_log.txt';
-$STATS_FILE = 'stats.json';
-$NOTICE_FILE = 'notice.json'; // 👈 新增：公告数据文件
+$ADMIN_PASSWORD = 'admin123'; // <--- ⚠️ 记得把 admin123 换成你的后台密码
+$LOG_FILE = '../feedback_log.txt'; // 加上 ../
+$STATS_FILE = '../stats.json';     // 加上 ../
+$NOTICE_FILE = '../notice.json';   // 加上 ../ 完美对齐前端！
 
 // 处理登录和退出
 $error_msg = '';
