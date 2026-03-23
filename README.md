@@ -20,7 +20,7 @@ If you like this project or want to discuss further, feel free to connect with m
 * 
 * 🎵 **抖音 (Douyin):** 搜 (抖音号: fbsgfzh)
 * 
-* 💬 **微信 (WeChat):** 你的微信号 (fbs0709)
+* 💬 **微信 (WeChat):**  (fbs0709)
 
 ---
 
@@ -51,6 +51,7 @@ While the original project provides a fantastic global isochrone mapping solutio
 1. 下载或 Clone 本仓库。
 2. 上传至任何支持 PHP 的 Web 服务器（如宝塔面板）。
 3. 确保 `/data` 和 `/api/data` 文件夹拥有写入权限（`755` 或 `777`）。
+4. 如果你喜欢本项目麻烦点个小⭐哦
 
 ---
 
