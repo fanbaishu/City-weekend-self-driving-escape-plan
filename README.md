@@ -59,7 +59,7 @@ While the original project provides a fantastic global isochrone mapping solutio
 
 This project is deeply inspired by and built upon the brilliant open-source repository [drive-escape](https://github.com/qiaoshouqing/drive-escape) created 
 
-本项目最核心的“等时线多边形拼接逻辑”与创意思维，完全来自于原作者的无私开源。在此向原作者致以最深的敬意与感谢！
+本项目最核心创意思维，完全来自于原作者的无私开源。在此向原作者致以最深的敬意与感谢！
 
 ## 📄 License
 
